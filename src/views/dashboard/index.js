@@ -1,12 +1,23 @@
 import React from "react";
-import { withStyles } from '@material-ui/core/styles';
 import { WidthProvider, Responsive } from "react-grid-layout";
 import DashboardTile from "./tile";
 import IconButton from '@material-ui/core/IconButton';
 import PowerSettingsNewIcon from '@material-ui/icons/PowerSettingsNew';
-import CreateNewFolderIcon from '@material-ui/icons/CreateNewFolder';
+import { updateTiles } from '../../store/uistate/actions';
 import DragHandleIcon from '@material-ui/icons/DragHandle';
-import _ from "lodash";
+
+import { bindActionCreators } from 'redux';
+import { connect } from 'react-redux';
+
+import vol from './vol';
+import cpty from './cpty';
+import clear from './clear';
+
+const data = {
+    vol: vol,
+    cpty: cpty,
+    clear: clear
+}
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
 
 class Dashboard extends React.PureComponent {
@@ -20,21 +31,8 @@ class Dashboard extends React.PureComponent {
         super(props);
 
         this.state = {
-            items: [0, 1, 2].map(function (i, key, list) {
-                return {
-                    i: i.toString(),
-                    x: i * 3,
-                    y: 0,
-                    w: 3,
-                    h: 5,
-                    draggableHandle: ".dragHandleTraco",
-                    add: i === (list.length - 1).toString()
-                };
-            }),
             newCounter: 0
         };
-
-        this.onAddItem = this.onAddItem.bind(this);
         this.onBreakpointChange = this.onBreakpointChange.bind(this);
     }
 
@@ -47,7 +45,8 @@ class Dashboard extends React.PureComponent {
         };
         const dragHandleTraco = {
             position: "absolute",
-            top: "-35px"
+            top: "-15px",
+            zIndex: 9999
         };
         const nonDraggable = {
             position: "absolute",
@@ -55,32 +54,22 @@ class Dashboard extends React.PureComponent {
             width: "100%",
             height: "100%"
         };
-        const i = el.add ? "+" : el.i;
         return (
-            <div key={i} data-grid={el}>
+            <div key={el.i} data-grid={el}>
                 <span className="text dragHandleTraco"
                     style={dragHandleTraco}>
                     <IconButton>
                         <DragHandleIcon />
                     </IconButton>
                 </span>
-                {el.add ? (
-                    <span
-                        className="nonDraggable"
-                        onClick={this.onAddItem}
-                        title="You can add an item by clicking here, too."
-                    >
-                        Add +
-          </span>
-                ) : (
-                        <div style={nonDraggable} className="nonDraggable">
-                            <DashboardTile />
-                        </div>
-                    )}
+                <div style={nonDraggable} className="nonDraggable">
+                    <DashboardTile title={el.title} subheader={el.subheader}
+                        avatar={el.avatar} data={data[el.i]}/>
+                </div>
                 <span
                     className="remove"
                     style={removeStyle}
-                    onClick={this.onRemoveItem.bind(this, i)}
+                    onClick={this.onRemoveItem.bind(this, el)}
                 >
                     <IconButton aria-label="Share">
                         <PowerSettingsNewIcon />
@@ -88,23 +77,6 @@ class Dashboard extends React.PureComponent {
                 </span>
             </div>
         );
-    }
-
-    onAddItem() {
-        /*eslint no-console: 0*/
-        console.log("adding", "n" + this.state.newCounter);
-        this.setState({
-            // Add a new item. It must have a unique key!
-            items: this.state.items.concat({
-                i: "n" + this.state.newCounter,
-                x: (this.state.items.length * 2) % (this.state.cols || 12),
-                y: Infinity, // puts it at the bottom
-                w: 3,
-                h: 4
-            }),
-            // Increment the counter to ensure key is always unique.
-            newCounter: this.state.newCounter + 1
-        });
     }
 
     // We're using the cols coming back from this to calculate where to add new items.
@@ -120,28 +92,47 @@ class Dashboard extends React.PureComponent {
         this.setState({ layout: layout });
     }
 
-    onRemoveItem(i) {
-        console.log("removing", i);
-        this.setState({ items: _.reject(this.state.items, { i: i }) });
+    onRemoveItem(el) {
+        let tiles = this.props.tiles.map((item, idx)=>{
+            let copyItem = {...item};
+            if (item.i === el.i) {
+                copyItem.shown = false;
+            }
+            return copyItem;
+        });
+        this.props.updateTiles(tiles);
     }
 
-    render() {        
+    render() {
         return (
             <div>
-                <IconButton aria-label="Share">
-                    <CreateNewFolderIcon onClick={this.onAddItem} />
-                </IconButton>
                 <ResponsiveReactGridLayout
                     draggableCancel=".nonDraggable"
                     onLayoutChange={this.onLayoutChange.bind(this)}
                     onBreakpointChange={this.onBreakpointChange.bind(this)}
                     {...this.props}
                 >
-                    {_.map(this.state.items, el => this.createElement(el))}
+                    {this.props.tiles.filter(el=> el.shown? true:false)
+                        .map(el => {return this.createElement(el);})}
                 </ResponsiveReactGridLayout>
             </div>
         );
     }
 }
 
-export default (Dashboard);
+const mapStateToProps = state => {
+    return {
+        tiles: state.uistate.dashboardTile
+    }
+}
+
+const mapDispatchToProps = dispatch => bindActionCreators({
+    updateTiles
+},
+    dispatch
+)
+
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(Dashboard);
