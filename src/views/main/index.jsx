@@ -21,6 +21,7 @@ import { updateTiles } from '../../store/uistate/actions';
 import { Route } from "react-router-dom";
 import Dashboard from '../dashboard';
 import Hawtio from '../hawtio';
+import Monitor from '../monitor';
 
 const drawerWidth = 240;
 
@@ -168,6 +169,7 @@ class MiniDrawer extends React.Component {
           <div className={classes.toolbar} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/hawtio" component={Hawtio} />
+          <Route path="/mon" component={Monitor} />
         </main>
       </div>
     );

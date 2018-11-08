@@ -25,6 +25,13 @@ export default [
     },
     {
         type: "link",
+        url: "/mon",
+        icon: "desktop_windows",
+        id: "mon",
+        text: "Monitor"
+    },    
+    {
+        type: "link",
         url: "/hawtio",
         icon: "queue_play_next",
         id: "hawtio",
